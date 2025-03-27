@@ -1,62 +1,51 @@
 @echo off
 chcp 65001 >nul
-powershell -Command "exit 0" >nul 2>&1
-if errorlevel 1 (
-    echo Erro: PowerShell nao encontrado. Este script requer PowerShell para funcionar.
-    pause
-    exit /b 1
+
+echo Script para criar pastas e subpastas
+echo -----------------------------------
+
+:ask_date
+echo Deseja usar a data de hoje (ex.: 27.03.25) ou digitar uma data? (1 = hoje, 2 = manual)
+set "choice="
+set /p choice="Digite 1 ou 2: "
+if "%choice%"=="1" (
+    set "folder_date=27.03.25"
+    goto create_main_folder
 )
-
-set "attempts_date=0"
-set "attempts_custom=0"
-
-:date_input
-echo Deseja usar a data de hoje para a pasta? (s/n)
-set "use_today_date="
-set /p use_today_date="Digite s ou n: "
-if /i "%use_today_date%"=="s" goto date_today
-if /i "%use_today_date%"=="n" goto date_manual
-set /a attempts_date+=1
-if %attempts_date% GEQ 3 (
-    echo Limite de tentativas excedido. Encerrando script.
-    goto end
+if "%choice%"=="2" (
+    goto manual_date
 )
-echo Opcao invalida. Digite 's' para sim ou 'n' para nao.
-goto date_input
+echo Opcao invalida. Digite 1 ou 2.
+goto ask_date
 
-:date_today
-for /f %%i in ('powershell -command "(Get-Date).ToString('dd.MM.yy')"') do set "data_pasta=%%i"
-goto create_folders
-
-:date_manual
-echo Digite a data no formato DD.MM.AA:
-set "data_pasta_input="
-set /p data_pasta_input="Data: "
-echo Verificando data...
-powershell -Command "try {$date = Get-Date '%data_pasta_input%'; exit 0} catch {Write-Output 'Erro: Data invalida. Use DD.MM.AA (ex.: 20.03.25)'; exit 1}"
-if %errorlevel%==1 (
-    goto date_manual
+:manual_date
+echo Digite a data no formato DD.MM.AA (ex.: 27.03.25):
+set "folder_date="
+set /p folder_date="Data: "
+if "%folder_date%"=="" (
+    echo Data nao pode ser vazia. Tente novamente.
+    goto manual_date
 )
-set "data_pasta=%data_pasta_input%"
+goto create_main_folder
 
-:create_folders
-if exist "%data_pasta%" (
-    echo A pasta "%data_pasta%" ja existe. Deseja continuar e adicionar subpastas nela? (s/n)
-    set "overwrite="
-    set /p overwrite="Digite s ou n: "
-    if /i not "%overwrite%"=="s" (
+:create_main_folder
+if exist "%folder_date%" (
+    echo A pasta "%folder_date%" ja existe. Deseja adicionar subpastas nela? (s/n)
+    set "continue="
+    set /p continue="Digite s ou n: "
+    if /i not "%continue%"=="s" (
         echo Operacao cancelada.
         goto end
     )
-    cd "%data_pasta%"
-    goto create_subfolders
+) else (
+    mkdir "%folder_date%"
+    if errorlevel 1 (
+        echo Erro ao criar a pasta "%folder_date%". Verifique permissoes ou espaco.
+        goto end
+    )
 )
-mkdir "%data_pasta%"
-if errorlevel 1 (
-    echo Erro: Nao foi possivel criar a pasta "%data_pasta%". Verifique permissoes ou espaco em disco.
-    goto end
-)
-cd "%data_pasta%"
+cd "%folder_date%"
+goto create_subfolders  :: Adicionado para direcionar o fluxo corretamente
 
 :create_subfolders
 echo Criando subpastas padrao...
@@ -66,45 +55,43 @@ mkdir "Vilareijo" 2>nul
 mkdir "Termometro" 2>nul
 mkdir "Ensaio" 2>nul
 
-:custom_prompt
+:custom_folder
 echo Deseja adicionar subpastas personalizadas? (s/n)
-set "add_custom_subfolders="
-set /p add_custom_subfolders="Digite s ou n: "
-if /i "%add_custom_subfolders%"=="s" goto custom_subfolders
-if /i "%add_custom_subfolders%"=="n" goto end_success
-set /a attempts_custom+=1
-if %attempts_custom% GEQ 3 (
-    echo Limite de tentativas excedido. Encerrando script.
-    goto end
+set "custom="
+set /p custom="Digite s ou n: "
+if /i "%custom%"=="n" goto success
+if /i "%custom%"=="s" (
+    goto add_custom_folder
 )
-echo Opcao invalida. Digite 's' para sim ou 'n' para nao.
-goto custom_prompt
+echo Opcao invalida. Digite 's' ou 'n'.
+goto custom_folder
 
-:custom_subfolders
-echo Digite o nome da subpasta personalizada (ou 'fim' para terminar):
-set "custom_subfolder_name="
-set /p custom_subfolder_name="Nome: "
-if /i "%custom_subfolder_name%"=="fim" goto end_success
-if "%custom_subfolder_name%"=="" (
-    echo Nome vazio nao permitido. Tente novamente.
-    goto custom_subfolders
+:add_custom_folder
+echo Digite o nome da subpasta (ou 'fim' para terminar):
+set "custom_name="
+set /p custom_name="Nome: "
+if /i "%custom_name%"=="fim" goto success
+if "%custom_name%"=="" (
+    echo Nome nao pode ser vazio. Tente novamente.
+    goto add_custom_folder
 )
-echo "%custom_subfolder_name%" | findstr /r "[\/:*?<>|]" >nul
+echo "%custom_name%" | findstr /r "[/:*?<>|]" >nul
 if %errorlevel%==0 (
     echo Nome invalido. Evite caracteres como / \ : * ? " < > ou |.
-    goto custom_subfolders
+    goto add_custom_folder
 )
-mkdir "%custom_subfolder_name%" 2>nul
+mkdir "%custom_name%" 2>nul
 if errorlevel 1 (
-    echo Erro ao criar "%custom_subfolder_name%". Nome pode ser muito longo ou ja existir.
+    echo Erro ao criar "%custom_name%". Pode ja existir ou ser invalido.
 ) else (
-    echo Subpasta personalizada "%custom_subfolder_name%" criada.
+    echo Subpasta "%custom_name%" criada.
 )
-goto custom_subfolders
+goto add_custom_folder
 
-:end_success
-echo Pastas criadas com sucesso em "%data_pasta%"!
+:success
+echo Pastas criadas com sucesso em "%folder_date%"!
 goto end
 
 :end
-pause
+echo Pressione qualquer tecla para sair...
+pause >nul
