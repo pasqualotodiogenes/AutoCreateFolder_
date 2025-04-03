@@ -1,34 +1,50 @@
-param (
-    [string]$folderDate = $(Get-Date -Format "dd.MM.yy"),
-    [string[]]$customFolders = @()
-)
+# Criador de Pastas Automático
 
-# Define o diretório base como o local onde o script está sendo executado
-$baseDir = $PSScriptRoot
-$targetFolder = Join-Path -Path $baseDir -ChildPath $folderDate
+Este script em PowerShell cria automaticamente uma pasta com a data atual e subpastas dentro dela. Caso a pasta do dia já exista, o script encerra a execução.
 
-# Se a pasta do dia já existir, encerrar o script
-if (Test-Path $targetFolder) {
-    Write-Host "A pasta '$folderDate' já foi criada anteriormente. Nenhuma nova ação necessária."
-    exit
-}
+## 📂 Estrutura das Pastas Criadas
+O script cria uma pasta com o nome da data atual no formato `DD.MM.AA` e, dentro dela, adiciona as seguintes subpastas:
 
-# Criar a pasta principal
-New-Item -ItemType Directory -Path $targetFolder | Out-Null
+- `Pista de Ski e Snow`
+- `Tubing`
+- `Vilarejo`
+- `Termometro`
+- `Ensaio`
 
-# Criar subpastas padrão
-$subfolders = @("Pista de Ski e Snow", "Tubing", "Vilarejo", "Termometro", "Ensaio")
-foreach ($subfolder in $subfolders) {
-    $subfolderPath = Join-Path -Path $targetFolder -ChildPath $subfolder
-    New-Item -ItemType Directory -Path $subfolderPath | Out-Null
-}
+Além disso, é possível adicionar subpastas personalizadas via parâmetros.
 
-# Criar subpastas personalizadas passadas pelo usuário
-foreach ($customFolder in $customFolders) {
-    if ($customFolder -ne "") {
-        $customPath = Join-Path -Path $targetFolder -ChildPath $customFolder
-        New-Item -ItemType Directory -Path $customPath | Out-Null
-    }
-}
+## 🚀 Como Usar
 
-Write-Host "As pastas foram criadas com sucesso dentro de '$targetFolder'!"
+### 1️⃣ Executar o Script Diretamente
+Abra o PowerShell e navegue até a pasta onde o script está salvo. Em seguida, execute o comando:
+
+```powershell
+.\create_folderAndSubFolder.ps1
+```
+
+Se quiser adicionar subpastas personalizadas ao executá-lo, utilize:
+
+```powershell
+.\create_folderAndSubFolder.ps1 -customFolders "Fotos Noturnas", "Time-lapse"
+```
+
+### 2️⃣ Configuração da Execução de Scripts
+Caso o script não rode devido a restrições de execução, libere-o com:
+
+```powershell
+Set-ExecutionPolicy Unrestricted -Scope Process
+```
+
+## 🔄 Lógica de Funcionamento
+1. O script verifica se já existe uma pasta para o dia atual.
+2. Se não existir, cria a pasta e as subpastas padrão.
+3. Caso já exista, exibe uma mensagem informando que a pasta do dia já foi criada e encerra a execução.
+4. Se forem passadas subpastas personalizadas, elas também são criadas dentro da pasta do dia.
+
+## 🛠 Requisitos
+- Windows
+- PowerShell 5.1 ou superior
+
+---
+
+Qualquer dúvida ou sugestão, fique à vontade para contribuir! 🚀
